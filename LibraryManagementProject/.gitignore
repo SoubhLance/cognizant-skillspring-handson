@@ -1,0 +1,35 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Log files
+logs/
+*.log
+
+# Intellij
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/yarn-error.log
+frontend/.pnpm-debug.log
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Simple Maven wrapper redirecting to local mvn command
+mvn "$@"
