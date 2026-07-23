@@ -3,6 +3,7 @@ package com.libraryManagementSystem.service.impl;
 import com.libraryManagementSystem.dto.*;
 import com.libraryManagementSystem.entity.*;
 import com.libraryManagementSystem.enums.UserStatus;
+import com.libraryManagementSystem.exception.AuthException;
 import com.libraryManagementSystem.exception.UserNotFoundException;
 import com.libraryManagementSystem.mapper.UserMapper;
 import com.libraryManagementSystem.repository.*;
@@ -80,7 +81,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new RuntimeException("User account is inactive or suspended");
+            throw new AuthException("User account is inactive or suspended");
         }
 
         // Handle Refresh Token
@@ -159,11 +160,11 @@ public class AuthServiceImpl implements AuthService {
         String requestRefreshToken = refreshRequest.getRefreshToken();
 
         RefreshToken token = refreshTokenRepository.findByToken(requestRefreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+                .orElseThrow(() -> new AuthException("Refresh token is not in database!"));
 
         if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
-            throw new RuntimeException("Refresh token was expired. Please make a new signin request");
+            throw new AuthException("Refresh token was expired. Please sign in again.");
         }
 
         User user = token.getUser();
@@ -228,7 +229,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             passwordResetTokenRepository.delete(resetToken);
-            throw new RuntimeException("Password reset token expired");
+            throw new AuthException("Password reset token has expired");
         }
 
         User user = resetToken.getUser();

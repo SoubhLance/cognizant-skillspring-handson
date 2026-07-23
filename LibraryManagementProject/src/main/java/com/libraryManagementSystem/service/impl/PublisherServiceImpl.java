@@ -7,6 +7,8 @@ import com.libraryManagementSystem.mapper.PublisherMapper;
 import com.libraryManagementSystem.repository.PublisherRepository;
 import com.libraryManagementSystem.service.PublisherService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class PublisherServiceImpl implements PublisherService {
     private PublisherMapper publisherMapper;
 
     @Override
+    @Cacheable(value = "publishers")
     public List<PublisherDto> getAllPublishers() {
         return publisherRepository.findAll().stream()
                 .map(publisherMapper::toDto)
@@ -38,6 +41,7 @@ public class PublisherServiceImpl implements PublisherService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "publishers", allEntries = true)
     public PublisherDto createPublisher(PublisherRequest request) {
         if (publisherRepository.existsByName(request.getName())) {
             throw new RuntimeException("Publisher already exists with name: " + request.getName());
@@ -49,6 +53,7 @@ public class PublisherServiceImpl implements PublisherService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "publishers", allEntries = true)
     public PublisherDto updatePublisher(Long id, PublisherRequest request) {
         Publisher publisher = publisherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Publisher not found with ID: " + id));
@@ -64,6 +69,7 @@ public class PublisherServiceImpl implements PublisherService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "publishers", allEntries = true)
     public void deletePublisher(Long id) {
         if (!publisherRepository.existsById(id)) {
             throw new RuntimeException("Publisher not found with ID: " + id);

@@ -8,6 +8,7 @@ import com.libraryManagementSystem.mapper.AuditLogMapper;
 import com.libraryManagementSystem.repository.*;
 import com.libraryManagementSystem.service.DashboardService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +43,7 @@ public class DashboardServiceImpl implements DashboardService {
     private AuditLogMapper auditLogMapper;
 
     @Override
+    @Cacheable(value = "dashboard")
     public DashboardAnalyticsDto getAnalytics() {
         long totalBooks = bookRepository.count();
         long totalUsers = userRepository.count();

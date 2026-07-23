@@ -7,6 +7,8 @@ import com.libraryManagementSystem.mapper.AuthorMapper;
 import com.libraryManagementSystem.repository.AuthorRepository;
 import com.libraryManagementSystem.service.AuthorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class AuthorServiceImpl implements AuthorService {
     private AuthorMapper authorMapper;
 
     @Override
+    @Cacheable(value = "authors")
     public List<AuthorDto> getAllAuthors() {
         return authorRepository.findAll().stream()
                 .map(authorMapper::toDto)
@@ -38,6 +41,7 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "authors", allEntries = true)
     public AuthorDto createAuthor(AuthorRequest request) {
         if (authorRepository.existsByName(request.getName())) {
             throw new RuntimeException("Author already exists with name: " + request.getName());
@@ -49,6 +53,7 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "authors", allEntries = true)
     public AuthorDto updateAuthor(Long id, AuthorRequest request) {
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Author not found with ID: " + id));
@@ -64,6 +69,7 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "authors", allEntries = true)
     public void deleteAuthor(Long id) {
         if (!authorRepository.existsById(id)) {
             throw new RuntimeException("Author not found with ID: " + id);

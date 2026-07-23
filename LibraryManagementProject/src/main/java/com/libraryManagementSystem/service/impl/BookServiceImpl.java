@@ -11,6 +11,7 @@ import com.libraryManagementSystem.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,7 +44,10 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "books", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = "books", allEntries = true),
+        @CacheEvict(value = "allBooks", allEntries = true)
+    })
     public BookDto createBook(BookRequest request) {
         if (bookRepository.existsByIsbn(request.getIsbn())) {
             throw new DuplicateBookException("A book with ISBN " + request.getIsbn() + " already exists.");
@@ -73,7 +77,10 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "books", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = "books", allEntries = true),
+        @CacheEvict(value = "allBooks", allEntries = true)
+    })
     public BookDto updateBook(Long id, BookRequest request) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new BookNotFoundException("Book not found with ID: " + id));
@@ -110,7 +117,10 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "books", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = "books", allEntries = true),
+        @CacheEvict(value = "allBooks", allEntries = true)
+    })
     public void deleteBook(Long id) {
         if (!bookRepository.existsById(id)) {
             throw new BookNotFoundException("Book not found with ID: " + id);
@@ -134,6 +144,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Cacheable(value = "allBooks", key = "#title + '_' + #isbn + '_' + #categoryId + '_' + #authorId + '_' + #publisherId + '_' + #available + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<BookDto> searchBooks(String title, String isbn, Long categoryId, Long authorId, Long publisherId, Boolean available, Pageable pageable) {
         Specification<Book> spec = Specification.where(BookSpecification.hasTitle(title))
                 .and(BookSpecification.hasIsbn(isbn))

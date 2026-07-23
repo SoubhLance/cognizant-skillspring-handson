@@ -8,12 +8,14 @@ import com.libraryManagementSystem.enums.BookCopyStatus;
 import com.libraryManagementSystem.enums.BookIssueStatus;
 import com.libraryManagementSystem.enums.FineStatus;
 import com.libraryManagementSystem.enums.UserStatus;
+import com.libraryManagementSystem.exception.BookIssueException;
 import com.libraryManagementSystem.exception.FineException;
 import com.libraryManagementSystem.mapper.BookIssueMapper;
 import com.libraryManagementSystem.repository.*;
 import com.libraryManagementSystem.service.BookIssueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,12 +55,13 @@ public class BookIssueServiceImpl implements BookIssueService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "dashboard", allEntries = true)
     public BookIssueDto issueBook(BookIssueRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BookIssueException("User not found"));
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new RuntimeException("User account is not active");
+            throw new BookIssueException("User account is not active");
         }
 
         // Check unpaid fines
@@ -88,15 +91,15 @@ public class BookIssueServiceImpl implements BookIssueService {
         }
 
         if (currentBorrowedCount >= maxBooks) {
-            throw new RuntimeException("User borrowing limit of " + maxBooks + " books has been reached.");
+            throw new BookIssueException("User borrowing limit of " + maxBooks + " books has been reached.");
         }
 
         // Check Copy availability
         BookCopy copy = bookCopyRepository.findByBarcode(request.getBarcode())
-                .orElseThrow(() -> new RuntimeException("Book copy with barcode " + request.getBarcode() + " not found."));
+                .orElseThrow(() -> new BookIssueException("Book copy with barcode " + request.getBarcode() + " not found."));
 
         if (copy.getStatus() != BookCopyStatus.AVAILABLE) {
-            throw new RuntimeException("This book copy is currently " + copy.getStatus());
+            throw new BookIssueException("This book copy is currently " + copy.getStatus());
         }
 
         // Create transaction
@@ -134,13 +137,14 @@ public class BookIssueServiceImpl implements BookIssueService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "dashboard", allEntries = true)
     public BookIssueDto returnBook(BookReturnRequest request) {
         BookCopy copy = bookCopyRepository.findByBarcode(request.getBarcode())
-                .orElseThrow(() -> new RuntimeException("Book copy not found"));
+                .orElseThrow(() -> new BookIssueException("Book copy not found"));
 
         BookIssue issue = bookIssueRepository.findFirstByBookCopyBarcodeAndStatusInOrderByIdDesc(
                 request.getBarcode(), Arrays.asList(BookIssueStatus.ISSUED, BookIssueStatus.RENEWED, BookIssueStatus.OVERDUE))
-                .orElseThrow(() -> new RuntimeException("No active borrow transaction found for copy: " + request.getBarcode()));
+                .orElseThrow(() -> new BookIssueException("No active borrow transaction found for copy: " + request.getBarcode()));
 
         LocalDate returnDate = LocalDate.now();
         issue.setReturnDate(returnDate);
@@ -190,12 +194,13 @@ public class BookIssueServiceImpl implements BookIssueService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "dashboard", allEntries = true)
     public BookIssueDto renewBook(Long issueId) {
         BookIssue issue = bookIssueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Borrow transaction not found"));
+                .orElseThrow(() -> new BookIssueException("Borrow transaction not found"));
 
         if (issue.getStatus() == BookIssueStatus.RETURNED) {
-            throw new RuntimeException("Returned books cannot be renewed");
+            throw new BookIssueException("Returned books cannot be renewed");
         }
 
         // Extend due date by 14 days
